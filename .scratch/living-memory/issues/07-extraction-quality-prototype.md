@@ -18,3 +18,16 @@ and judge fidelity **with the user**:
 
 Rough script, not production. Links the prototype + a short findings note as assets. This is the
 single highest-value early ticket — it tells us if the crown jewel actually works.
+
+## Progress (harness scaffolded — awaiting entries + a run)
+
+The runnable harness is built and committed, so running is one command once entries exist:
+- `mirror/ontology.py` — approved person-ontology as Graphiti custom Pydantic types (coarse
+  `Literal` buckets; no protected `name` attribute; entity/edge/edge-type-map registries).
+- `mirror/prototype.py` — connects Gemini 2.5 Pro + Gemini embeddings + FalkorDB, ingests
+  `data/entries/YYYY-MM-DD.md` **oldest-first** with `reference_time` = authored date, then dumps
+  the resulting entities/edges (with bi-temporal windows) for the fidelity eyeball.
+- `docker-compose.yml`, `requirements.txt`, `.env.example`, `README.md` — the run recipe.
+
+Still **open**: needs 3–5 real entries in `data/entries/` + `docker compose up` + a Gemini key,
+then we run it, judge fidelity together, and probe the ticket-06 drift risks.

@@ -1,0 +1,15 @@
+# FalkorDB — one container, same image local and prod (per the adapter-boundary decision).
+# Start with:  docker compose up -d
+services:
+  falkordb:
+    image: falkordb/falkordb:latest
+    container_name: mirror-falkordb
+    ports:
+      - "6379:6379"   # Redis protocol — Graphiti's FalkorDriver connects here
+      - "3000:3000"   # FalkorDB Browser UI — open http://localhost:3000 to eyeball the graph
+    volumes:
+      - falkordb-data:/data
+    restart: unless-stopped
+
+volumes:
+  falkordb-data:

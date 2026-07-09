@@ -1,0 +1,7 @@
+# mirror — prototype harness
+# Graphiti with the FalkorDB driver + Google Gemini providers.
+graphiti-core[falkordb]>=0.17
+python-dotenv>=1.0
+
+# Stage-2 (going-forward audio entries) — uncomment when we wire local transcription:
+# faster-whisper>=1.0
