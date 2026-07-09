@@ -1,0 +1,38 @@
+# Secrets & config — NEVER commit
+.env
+.env.*
+*.key
+secrets/
+providers.local.*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node (future web frontend)
+node_modules/
+dist/
+.next/
+*.log
+
+# Data — journal entries & graph dumps stay local unless deliberately shared
+data/
+*.sqlite
+*.db
+dump.rdb
+
+# gstack tooling artifacts
+.gstack/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
