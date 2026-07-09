@@ -2,7 +2,8 @@
 
 Type: prototype
 Status: open
-Blocked by: —
+Blocked by: — (awaiting user-provided entries: 3–5 real journal entries with dates,
+typed or photographed, spread across the ~3 years)
 
 ## Question
 

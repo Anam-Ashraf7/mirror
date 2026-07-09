@@ -65,6 +65,8 @@ effort* once this spec is locked. No production build during this map.
 - [Interaction surface](issues/03-interaction-surface.md) — **local web app** on localhost (Python backend + browser frontend); the visual proofread gate + cited answers need a UI, and it's the seed of the future multi-user product. Chat lives inside it.
 - [Audio transcription approach](issues/04-audio-transcription.md) — **faster-whisper local** behind a `Transcriber` adapter; raw voice never leaves the machine, $0/min, offline, proofread gate covers accuracy. Fallback: Gemini audio → hosted STT.
 - [Entity resolution & consistency](issues/06-entity-resolution-consistency.md) — **handled natively** (auto node-dedup via `SAME_AS` components + bi-temporal contradiction invalidation); Gemini + `json_schema` + atomic attributes as mitigations. Three drift risks handed to the prototype (07).
+- [Provider adapter boundary](issues/05-provider-adapter-boundary.md) — **lean on Graphiti's provider system; wrap only the gaps**: build `Transcriber` + `Normalizer` + a `MemoryEngine` facade (the app's one entry point); config via `.env` + a providers config. No parallel abstraction over Graphiti.
+- [Longitudinal answer & citation UX](issues/09-longitudinal-answer-ux.md) — **three-layer, narrative-first** (narrative → transition timeline → cited source entries); no claim shown without a citation; graceful refusal + suggested answerable questions. [Mockup published.](https://claude.ai/code/artifact/9f745aa5-4e02-473b-a072-ff8c8e01c3d1)
 
 ## Not yet specified
 

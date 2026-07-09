@@ -1,7 +1,7 @@
 # Provider adapter boundary design
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: 01, 04
 
 ## Question
@@ -18,3 +18,24 @@ Pin down:
   multi-user swaps stay one-config-flip changes.
 
 Depends on the embedder (01) and transcription (04) choices being known.
+
+## Answer
+
+**Lean on Graphiti's built-in provider system; wrap only the gaps.** Graphiti already ships
+pluggable `LLMClient` / `EmbedderClient` / `GraphDriver` interfaces and an OpenAI-compatible client
+(for a future local Ollama/vLLM extraction swap), and we chose FalkorDB for *both* local and prod —
+so the LLM/embedder/backend swappability we need is already covered by config. Building a parallel
+abstraction over that is speculative insulation; skip it.
+
+**What we build (only what Graphiti doesn't own):**
+- `Transcriber` — `transcribe(audio) -> text`; impl = local faster-whisper (per ticket 04). The one
+  seam for swapping to Gemini-audio / hosted STT.
+- `Normalizer` — the *only* format-aware code: notebook-photo / typed / audio → a uniform
+  `{date, text}` episode. Keeps all source-format knowledge in one place.
+- `MemoryEngine` facade — the single object the web app calls (`ingest(entry)`, `ask(question)`,
+  the analytical primitives). The app never touches Graphiti directly; this facade *is* the one
+  seam we'd re-implement behind if we ever left Graphiti — exactly enough insulation, no more.
+
+**Config/wiring:** secrets in git-ignored `.env` (Gemini key); a `providers` config selecting
+LLM/embedder/backend + Transcriber impl, so local↔prod and cloud↔local-extraction are one-config
+changes. Graphiti gets configured from that at startup.

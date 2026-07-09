@@ -1,0 +1,430 @@
+<title>mirror — answer view mockup</title>
+<style>
+  :root {
+    --bg: #F1F4F3;
+    --surface: #FFFFFF;
+    --surface-2: #E9EEEC;
+    --ink: #17211E;
+    --ink-2: #4A5652;
+    --ink-3: #7C8783;
+    --line: #DBE2DF;
+    --accent: #2C7A6B;
+    --accent-ink: #1F5A4F;
+    --accent-wash: #E2EFEB;
+    --past: #B4785C;
+    --past-wash: #F0E4DC;
+    --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
+    --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --mono: ui-monospace, 'SF Mono', 'Cascadia Code', 'Roboto Mono', Menlo, monospace;
+    --shadow: 0 1px 2px rgba(23,33,30,.04), 0 8px 24px rgba(23,33,30,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0D1412; --surface: #131C19; --surface-2: #1B2621;
+      --ink: #E7ECEA; --ink-2: #A9B4B0; --ink-3: #6F7B77; --line: #263230;
+      --accent: #57B7A4; --accent-ink: #7FD0BF; --accent-wash: #12312A;
+      --past: #C88E6F; --past-wash: #2C211A;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #F1F4F3; --surface: #FFFFFF; --surface-2: #E9EEEC;
+    --ink: #17211E; --ink-2: #4A5652; --ink-3: #7C8783; --line: #DBE2DF;
+    --accent: #2C7A6B; --accent-ink: #1F5A4F; --accent-wash: #E2EFEB;
+    --past: #B4785C; --past-wash: #F0E4DC;
+    --shadow: 0 1px 2px rgba(23,33,30,.04), 0 8px 24px rgba(23,33,30,.06);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0D1412; --surface: #131C19; --surface-2: #1B2621;
+    --ink: #E7ECEA; --ink-2: #A9B4B0; --ink-3: #6F7B77; --line: #263230;
+    --accent: #57B7A4; --accent-ink: #7FD0BF; --accent-wash: #12312A;
+    --past: #C88E6F; --past-wash: #2C211A;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--sans); line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  /* --- masthead --- */
+  .mast { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+  .logo {
+    font-family: var(--serif); font-size: 30px; font-weight: 600;
+    letter-spacing: -.01em; color: var(--ink);
+  }
+  .logo .dot { color: var(--accent); }
+  .tagline {
+    font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--ink-3); font-weight: 500;
+  }
+  .rule { height: 1px; background: var(--line); margin: 22px 0 28px; border: 0; }
+
+  /* --- ask bar --- */
+  .ask {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .ask .q-icon { color: var(--accent); flex: none; }
+  .ask .q-text {
+    font-family: var(--serif); font-size: 19px; color: var(--ink);
+    font-style: italic;
+  }
+  .segmented {
+    display: flex; gap: 6px; margin: 18px 0 30px; flex-wrap: wrap;
+  }
+  .seg {
+    font-family: var(--sans); font-size: 13px; color: var(--ink-2);
+    background: var(--surface-2); border: 1px solid transparent;
+    padding: 7px 13px; border-radius: 999px; cursor: pointer;
+    transition: background .18s, color .18s, border-color .18s;
+  }
+  .seg:hover { color: var(--ink); }
+  .seg[aria-pressed="true"] {
+    background: var(--accent-wash); color: var(--accent-ink);
+    border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+    font-weight: 600;
+  }
+  .seg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .label {
+    font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--ink-3); font-weight: 600; margin: 0 0 12px;
+  }
+
+  /* --- layer 1: narrative --- */
+  .narrative {
+    font-family: var(--serif); font-size: 22px; line-height: 1.66;
+    color: var(--ink); letter-spacing: -.005em; margin: 0;
+    text-wrap: pretty;
+  }
+  .narrative p { margin: 0 0 18px; }
+  .narrative p:last-child { margin-bottom: 0; }
+  .cite {
+    font-family: var(--sans); font-size: .58em; font-weight: 700;
+    vertical-align: super; line-height: 0;
+    color: var(--accent-ink); background: var(--accent-wash);
+    border: 0; cursor: pointer; padding: 2px 5px; border-radius: 5px;
+    margin-left: 1px; transition: background .15s, transform .1s;
+  }
+  .cite:hover { background: color-mix(in srgb, var(--accent) 26%, transparent); }
+  .cite:active { transform: translateY(1px); }
+  .cite:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* --- layer 2: timeline (the evidence spine) --- */
+  .spine { margin-top: 40px; }
+  .timeline {
+    position: relative; margin: 6px 0 0; padding: 4px 0;
+  }
+  .track {
+    position: absolute; left: 10px; right: 10px; top: 22px; height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--past) 0%, #9a8a72 42%, var(--accent) 100%);
+    opacity: .55;
+  }
+  .nodes {
+    position: relative; display: grid;
+    grid-template-columns: repeat(4, 1fr); gap: 10px;
+  }
+  .node { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+  .dot-row { display: flex; align-items: center; height: 44px; }
+  .dot {
+    width: 15px; height: 15px; border-radius: 50%;
+    border: 3px solid var(--surface); box-shadow: 0 0 0 2px currentColor;
+    background: currentColor;
+  }
+  .node.past { color: var(--past); }
+  .node.mid  { color: #9a8a72; }
+  .node.now  { color: var(--accent); }
+  .n-date {
+    font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+    font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+  }
+  .n-name {
+    font-family: var(--sans); font-size: 14.5px; font-weight: 600; color: var(--ink);
+    line-height: 1.25;
+  }
+  .n-intensity {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em;
+    text-transform: uppercase; color: var(--ink-2);
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .bar { display: inline-flex; gap: 2px; }
+  .bar i { width: 4px; height: 10px; border-radius: 1px; background: currentColor; opacity: .28; }
+  .bar i.on { opacity: 1; }
+
+  /* --- layer 3: sources --- */
+  .sources { margin-top: 44px; display: flex; flex-direction: column; gap: 12px; }
+  .entry {
+    background: var(--surface); border: 1px solid var(--line);
+    border-left: 3px solid var(--line); border-radius: 12px;
+    padding: 16px 18px; scroll-margin-top: 24px;
+    transition: border-color .3s, box-shadow .3s, transform .2s;
+  }
+  .entry.is-active {
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+    border-left-color: var(--accent); box-shadow: var(--shadow);
+  }
+  .entry-head {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .entry-ref {
+    font-family: var(--sans); font-size: 11px; font-weight: 700;
+    color: var(--accent-ink); background: var(--accent-wash);
+    padding: 2px 7px; border-radius: 5px;
+  }
+  .entry-date {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .entry-body {
+    font-family: var(--serif); font-size: 16px; line-height: 1.62;
+    color: var(--ink-2); margin: 0;
+  }
+  .entry-tags { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .02em;
+    color: var(--ink-2); background: var(--surface-2);
+    padding: 3px 8px; border-radius: 6px;
+  }
+  .tag.strug { color: var(--past); background: var(--past-wash); }
+  .tag.now { color: var(--accent-ink); background: var(--accent-wash); }
+
+  /* --- refuse state --- */
+  .refuse {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; padding: 22px 22px 24px; box-shadow: var(--shadow);
+  }
+  .refuse-head {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+    color: var(--ink-2);
+  }
+  .refuse-title {
+    font-family: var(--serif); font-size: 20px; color: var(--ink); font-style: italic;
+  }
+  .refuse-body {
+    font-family: var(--serif); font-size: 18px; line-height: 1.6;
+    color: var(--ink-2); margin: 0 0 6px;
+  }
+  .refuse-meter {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-3);
+    margin: 14px 0 22px; display: flex; align-items: center; gap: 10px;
+    font-variant-numeric: tabular-nums;
+  }
+  .meter-track { flex: 1; height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+  .meter-fill { height: 100%; width: 12%; background: var(--past); opacity: .7; border-radius: 3px; }
+  .suggest { display: flex; flex-direction: column; gap: 9px; }
+  .chip {
+    text-align: left; width: 100%; cursor: pointer;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 13px 15px; color: var(--ink);
+    font-family: var(--serif); font-size: 16.5px; font-style: italic;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    transition: border-color .18s, background .18s, transform .12s;
+  }
+  .chip:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); transform: translateX(2px); }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .chip .arrow { color: var(--accent); font-family: var(--sans); font-size: 18px; flex: none; }
+  .chip .why {
+    display: block; font-family: var(--mono); font-style: normal;
+    font-size: 10.5px; letter-spacing: .02em; text-transform: uppercase;
+    color: var(--ink-3); margin-top: 3px;
+  }
+
+  .footnote {
+    margin-top: 40px; padding-top: 18px; border-top: 1px dashed var(--line);
+    font-size: 13px; color: var(--ink-3); font-family: var(--sans);
+    display: flex; gap: 9px; align-items: flex-start;
+  }
+  .footnote b { color: var(--ink-2); font-weight: 600; }
+
+  .view { display: none; }
+  .view.active { display: block; animation: rise .4s ease both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .node { animation: rise .5s ease both; }
+  .node:nth-child(2){ animation-delay:.06s } .node:nth-child(3){ animation-delay:.12s } .node:nth-child(4){ animation-delay:.18s }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, .view.active, .node { animation: none !important; transition: none !important; }
+  }
+  @media (max-width: 560px) {
+    .narrative { font-size: 20px; }
+    .nodes { grid-template-columns: repeat(2, 1fr); row-gap: 22px; }
+    .track { display: none; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="mast">
+      <span class="logo">mirror<span class="dot">.</span></span>
+      <span class="tagline">a living memory of you</span>
+    </div>
+    <hr class="rule" />
+  </header>
+
+  <div class="ask">
+    <svg class="q-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <span class="q-text" id="askText">How much have I changed in the last three years?</span>
+  </div>
+
+  <div class="segmented" role="group" aria-label="Example questions">
+    <button class="seg" data-view="changed" aria-pressed="true">How have I changed?</button>
+    <button class="seg" data-view="weather" aria-pressed="false">Does weather affect my mood?</button>
+  </div>
+
+  <!-- ============ VIEW 1: a grounded answer ============ -->
+  <section class="view active" id="view-changed">
+    <p class="label">The short of it</p>
+    <div class="narrative">
+      <p>For most of your first year, <strong>impatience</strong> was the loudest thing in your
+      practice — you named it again and again, usually mid-sit, usually strong.<button class="cite" data-ref="e1" aria-label="source: 12 March 2023">1</button></p>
+      <p>Through late 2024 it began to loosen. The word that keeps appearing is <em>softening</em> — not
+      gone, but quieter, and you start meeting it instead of fighting it.<button class="cite" data-ref="e2" aria-label="source: 3 November 2024">2</button></p>
+      <p>What sits in its place now is subtler: a quiet <strong>self-judgment</strong> that shows up
+      after difficult sits — and, increasingly, moments you describe as <strong>equanimity</strong>.
+      The struggle didn't vanish; it changed shape.<button class="cite" data-ref="e3" aria-label="source: 21 April 2026">3</button></p>
+    </div>
+
+    <div class="spine">
+      <p class="label">How it moved — your own words, on their dates</p>
+      <div class="timeline">
+        <div class="track" aria-hidden="true"></div>
+        <div class="nodes">
+          <div class="node past">
+            <span class="n-date">2023 · Mar</span>
+            <div class="dot-row"><span class="dot"></span></div>
+            <span class="n-name">Impatience</span>
+            <span class="n-intensity">strong <span class="bar"><i class="on"></i><i class="on"></i><i class="on"></i></span></span>
+          </div>
+          <div class="node mid">
+            <span class="n-date">2024 · Nov</span>
+            <div class="dot-row"><span class="dot"></span></div>
+            <span class="n-name">Impatience, softening</span>
+            <span class="n-intensity">moderate <span class="bar"><i class="on"></i><i class="on"></i><i></i></span></span>
+          </div>
+          <div class="node now">
+            <span class="n-date">2025 · Jul</span>
+            <div class="dot-row"><span class="dot"></span></div>
+            <span class="n-name">Self-judgment</span>
+            <span class="n-intensity">subtle <span class="bar"><i class="on"></i><i></i><i></i></span></span>
+          </div>
+          <div class="node now">
+            <span class="n-date">2026 · Apr</span>
+            <div class="dot-row"><span class="dot"></span></div>
+            <span class="n-name">Equanimity, emerging</span>
+            <span class="n-intensity">growing <span class="bar"><i class="on"></i><i class="on"></i><i></i></span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sources">
+      <p class="label">Sources — nothing above is said without one of these</p>
+      <article class="entry" id="e1">
+        <div class="entry-head"><span class="entry-ref">1</span><span class="entry-date">2023-03-12</span></div>
+        <p class="entry-body">"Twenty minutes in and I'm already checking how long is left. This impatience is
+        relentless — like the whole sit is just something to get through. Frustrated with myself for it."</p>
+        <div class="entry-tags"><span class="tag strug">Struggle · impatience</span><span class="tag">EmotionalState · frustration</span></div>
+      </article>
+      <article class="entry" id="e2">
+        <div class="entry-head"><span class="entry-ref">2</span><span class="entry-date">2024-11-03</span></div>
+        <p class="entry-body">"Noticed the impatience come up and… I didn't grab it this time. Just watched it soften
+        on its own. First time it felt like something I could be with rather than fix."</p>
+        <div class="entry-tags"><span class="tag strug">Struggle · impatience</span><span class="tag now">Practice · noting</span></div>
+      </article>
+      <article class="entry" id="e3">
+        <div class="entry-head"><span class="entry-ref">3</span><span class="entry-date">2026-04-21</span></div>
+        <p class="entry-body">"Hard sit, restless. Afterwards the old voice — 'you're bad at this.' But it passed
+        quicker than it used to. And this evening, walking home, a real stretch of just… ease. Nothing to fix."</p>
+        <div class="entry-tags"><span class="tag">Struggle · self-judgment</span><span class="tag now">EmotionalState · equanimity</span></div>
+      </article>
+    </div>
+
+    <div class="footnote">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex:none;margin-top:2px;color:var(--accent)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span><b>Grounded answer.</b> Every claim traces to an entry you actually wrote and a transition the
+      graph actually holds. The wording is generated; the facts are not.</span>
+    </div>
+  </section>
+
+  <!-- ============ VIEW 2: an honest refusal ============ -->
+  <section class="view" id="view-weather">
+    <div class="refuse">
+      <div class="refuse-head">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+        <span class="refuse-title">I can't answer this one honestly — yet.</span>
+      </div>
+      <p class="refuse-body">Only <b>two</b> of your entries mention the weather, and neither ties it to how you
+      felt. That's not enough to see a real pattern, and I'd rather tell you that than invent one.</p>
+      <div class="refuse-meter">
+        <span>weather &times; mood</span>
+        <span class="meter-track"><span class="meter-fill"></span></span>
+        <span>2 entries</span>
+      </div>
+
+      <p class="label" style="margin-bottom:12px">But here's what I <em>can</em> see clearly right now</p>
+      <div class="suggest">
+        <button class="chip" data-goto="changed">
+          <span>How has impatience changed over three years?<span class="why">richly documented · 40+ entries</span></span>
+          <span class="arrow">&rarr;</span>
+        </button>
+        <button class="chip" data-ask="What tends to show up just before your restlessness?">
+          <span>What tends to show up just before your restlessness?<span class="why">strong co-occurrence signal</span></span>
+          <span class="arrow">&rarr;</span>
+        </button>
+        <button class="chip" data-ask="How has your morning practice evolved?">
+          <span>How has your morning practice evolved?<span class="why">tracked steadily since 2023</span></span>
+          <span class="arrow">&rarr;</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="footnote">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex:none;margin-top:2px;color:var(--accent)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span><b>Honest by design.</b> A graceful "I can't see that" is what makes the confident answers worth
+      trusting — and it points you toward the questions your own record can actually answer.</span>
+    </div>
+  </section>
+</div>
+
+<script>
+  const views = { changed: document.getElementById('view-changed'), weather: document.getElementById('view-weather') };
+  const asks = {
+    changed: 'How much have I changed in the last three years?',
+    weather: 'Does the weather affect my mood?'
+  };
+  const askText = document.getElementById('askText');
+  const segs = [...document.querySelectorAll('.seg')];
+
+  function show(view) {
+    for (const [k, el] of Object.entries(views)) el.classList.toggle('active', k === view);
+    segs.forEach(s => s.setAttribute('aria-pressed', String(s.dataset.view === view)));
+    askText.textContent = asks[view];
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  segs.forEach(s => s.addEventListener('click', () => show(s.dataset.view)));
+
+  // citation -> highlight its source entry
+  document.querySelectorAll('.cite').forEach(c => {
+    c.addEventListener('click', () => {
+      const el = document.getElementById(c.dataset.ref);
+      document.querySelectorAll('.entry').forEach(e => e.classList.remove('is-active'));
+      el.classList.add('is-active');
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  });
+
+  // suggestion chips
+  document.querySelectorAll('.chip').forEach(ch => {
+    ch.addEventListener('click', () => {
+      if (ch.dataset.goto) show(ch.dataset.goto);
+      else if (ch.dataset.ask) { asks.changed = ch.dataset.ask; show('changed'); }
+    });
+  });
+</script>
