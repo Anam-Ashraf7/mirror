@@ -1,6 +1,7 @@
 # Secrets & config — NEVER commit
 .env
 .env.*
+!.env.example
 *.key
 secrets/
 providers.local.*
