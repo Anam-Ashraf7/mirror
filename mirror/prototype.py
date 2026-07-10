@@ -240,6 +240,9 @@ async def main() -> None:
         raise SystemExit("  Set GEMINI_API_KEY in .env (see .env.example).")
 
     entries = load_entries()
+    limit = int(os.getenv("MIRROR_MAX_ENTRIES", "0"))   # e.g. 1 to validate cheaply on free tier
+    if limit > 0:
+        entries = entries[:limit]
     print(f"\n  Loaded {len(entries)} entries, "
           f"{entries[0][0].date()} → {entries[-1][0].date()} (oldest first).\n")
 
