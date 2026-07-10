@@ -18,11 +18,17 @@ from __future__ import annotations
 
 import os
 import re
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+
+try:  # force UTF-8 stdout so arrows/bullets don't crash on cp1252 consoles (Windows)
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:  # noqa: BLE001
+    pass
 
 DEFAULT_VISION_MODEL = "gemini-3-flash-preview"  # multimodal — reads handwriting; override in .env
 ENTRIES_DIR = Path("data/entries")

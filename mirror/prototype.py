@@ -22,10 +22,16 @@ from __future__ import annotations
 import asyncio
 import os
 import re
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
+
+try:  # force UTF-8 stdout so arrows/bullets don't crash on cp1252 consoles (Windows)
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:  # noqa: BLE001
+    pass
 
 # Keep Gemini calls gentle — one at a time — to dodge 503 "high demand" and free-tier rate
 # caps. Must be set BEFORE graphiti_core is imported (it reads this at import).
