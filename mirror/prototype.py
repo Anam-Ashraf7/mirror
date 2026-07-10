@@ -27,6 +27,10 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+# Keep Gemini calls gentle — one at a time — to dodge 503 "high demand" and free-tier rate
+# caps. Must be set BEFORE graphiti_core is imported (it reads this at import).
+os.environ.setdefault("SEMAPHORE_LIMIT", "1")
+
 from graphiti_core import Graphiti
 from graphiti_core.nodes import EpisodeType
 from graphiti_core.driver.falkordb_driver import FalkorDriver
@@ -94,19 +98,43 @@ def build_graphiti() -> Graphiti:
     )
 
 
+TRANSIENT = ("503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "500", "INTERNAL", "overloaded")
+
+
+def _is_transient(err: BaseException) -> bool:
+    """Walk the exception chain — Graphiti wraps the real 503 in a bare Exception."""
+    seen, cur = set(), err
+    while cur is not None and id(cur) not in seen:
+        seen.add(id(cur))
+        if any(k in str(cur) for k in TRANSIENT):
+            return True
+        cur = cur.__cause__ or cur.__context__
+    return False
+
+
 async def ingest(graphiti: Graphiti, entries) -> None:
     for date, filename, text in entries:
         print(f"  → ingesting {filename}  ({date.date()})  [{len(text)} chars]")
-        await graphiti.add_episode(
-            name=f"journal-{date.date()}",
-            episode_body=text,
-            source=EpisodeType.text,
-            source_description="handwritten journal entry (proofread)",
-            reference_time=date,           # <-- the authored date, NOT today. Critical.
-            entity_types=ENTITY_TYPES,
-            edge_types=EDGE_TYPES,
-            edge_type_map=EDGE_TYPE_MAP,
-        )
+        delay, attempts = 5, 6
+        for attempt in range(1, attempts + 1):
+            try:
+                await graphiti.add_episode(
+                    name=f"journal-{date.date()}",
+                    episode_body=text,
+                    source=EpisodeType.text,
+                    source_description="handwritten journal entry (proofread)",
+                    reference_time=date,   # <-- the authored date, NOT today. Critical.
+                    entity_types=ENTITY_TYPES,
+                    edge_types=EDGE_TYPES,
+                    edge_type_map=EDGE_TYPE_MAP,
+                )
+                break
+            except Exception as e:  # noqa: BLE001 — non-transient errors re-raise below
+                if attempt == attempts or not _is_transient(e):
+                    raise
+                print(f"      ! Gemini busy (transient) — waiting {delay}s, then retry {attempt}/{attempts - 1}")
+                await asyncio.sleep(delay)
+                delay = min(delay * 2, 90)
 
 
 async def dump_graph(graphiti: Graphiti) -> None:
