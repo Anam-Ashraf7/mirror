@@ -126,14 +126,23 @@ async def clear_graph(graphiti: Graphiti) -> None:
     await graphiti.driver.execute_query("MATCH (n) DETACH DELETE n")
 
 
+# transient by message text (server capacity / rate) ...
 TRANSIENT = ("503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "500", "INTERNAL", "overloaded")
+# ... or by exception TYPE (network drops, which carry an empty message).
+TRANSIENT_TYPES = {
+    "ReadError", "WriteError", "ConnectError", "ReadTimeout", "ConnectTimeout",
+    "PoolTimeout", "RemoteProtocolError", "ServerError", "ConnectionError", "TimeoutError",
+}
 
 
 def _is_transient(err: BaseException) -> bool:
-    """Walk the exception chain — Graphiti wraps the real 503 in a bare Exception."""
+    """Walk the exception chain — Graphiti buries the real cause (a 503 or a network
+    ReadError) inside a bare, message-less Exception, so check both text and type."""
     seen, cur = set(), err
     while cur is not None and id(cur) not in seen:
         seen.add(id(cur))
+        if type(cur).__name__ in TRANSIENT_TYPES:
+            return True
         if any(k in str(cur) for k in TRANSIENT):
             return True
         cur = cur.__cause__ or cur.__context__
