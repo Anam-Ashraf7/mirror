@@ -93,6 +93,16 @@ def model_chain() -> list[str]:
     return [m.strip() for m in raw.split(",") if m.strip()]
 
 
+def small_model_id() -> str:
+    # Graphiti uses a cheaper "small_model" for attribute extraction / dedup. Its built-in
+    # Gemini default is gemini-2.5-flash-lite, which the API now 404s — so set it explicitly.
+    return os.getenv("MIRROR_SMALL_MODEL", "gemini-3.1-flash-lite")
+
+
+def make_llm_client(api_key: str, model: str) -> GeminiClient:
+    return GeminiClient(config=LLMConfig(api_key=api_key, model=model, small_model=small_model_id()))
+
+
 def build_graphiti(llm_model: str) -> Graphiti:
     api_key = os.environ["GEMINI_API_KEY"]
     driver = FalkorDriver(
@@ -102,13 +112,10 @@ def build_graphiti(llm_model: str) -> Graphiti:
     )
     embed_model = os.getenv("MIRROR_EMBED_MODEL", DEFAULT_EMBED_MODEL)
     rerank_model = os.getenv("MIRROR_RERANK_MODEL", DEFAULT_RERANK_MODEL)
-    # Graphiti uses a cheaper "small_model" for attribute extraction / dedup. Its built-in
-    # Gemini default is gemini-2.5-flash-lite, which the API now 404s — so set it explicitly.
-    small_model = os.getenv("MIRROR_SMALL_MODEL", "gemini-3.1-flash-lite")
-    print(f"  models  llm={llm_model}  small={small_model}  embed={embed_model}  rerank={rerank_model}")
+    print(f"  models  llm={llm_model}  small={small_model_id()}  embed={embed_model}  rerank={rerank_model}")
     return Graphiti(
         graph_driver=driver,
-        llm_client=GeminiClient(config=LLMConfig(api_key=api_key, model=llm_model, small_model=small_model)),
+        llm_client=make_llm_client(api_key, llm_model),
         embedder=GeminiEmbedder(config=GeminiEmbedderConfig(api_key=api_key, embedding_model=embed_model)),
         cross_encoder=GeminiRerankerClient(config=LLMConfig(api_key=api_key, model=rerank_model)),
     )
@@ -133,11 +140,16 @@ def _is_transient(err: BaseException) -> bool:
     return False
 
 
-async def ingest(graphiti: Graphiti, entries) -> None:
+async def ingest(graphiti: Graphiti, entries, chain: list[str], api_key: str) -> None:
+    """Ingest each entry, keeping completed work. On a transient 503 we SWITCH the live
+    model to the next in the chain (instantly, no wipe) and retry the same entry; only on
+    the last model do we wait-and-retry. The model index persists across entries, so once
+    we land on a model with headroom, the rest of the run stays on it."""
+    idx = 0
     for date, filename, text in entries:
-        print(f"  → ingesting {filename}  ({date.date()})  [{len(text)} chars]")
-        delay, attempts = 4, 3   # give up on this model quickly so the fallback chain kicks in
-        for attempt in range(1, attempts + 1):
+        print(f"  → ingesting {filename}  ({date.date()})  [{len(text)} chars]  via {chain[idx]}")
+        backoff = 0
+        while True:
             try:
                 await graphiti.add_episode(
                     name=f"journal-{date.date()}",
@@ -151,11 +163,19 @@ async def ingest(graphiti: Graphiti, entries) -> None:
                 )
                 break
             except Exception as e:  # noqa: BLE001 — non-transient errors re-raise below
-                if attempt == attempts or not _is_transient(e):
+                if not _is_transient(e):
                     raise
-                print(f"      ! Gemini busy (transient) — waiting {delay}s, then retry {attempt}/{attempts - 1}")
-                await asyncio.sleep(delay)
-                delay = min(delay * 2, 90)
+                if idx < len(chain) - 1:                      # switch model instantly, no wait
+                    idx += 1
+                    graphiti.llm_client = make_llm_client(api_key, chain[idx])
+                    print(f"      '{chain[idx - 1]}' overloaded → switched to '{chain[idx]}', retrying")
+                    continue
+                backoff += 1                                  # last model: be patient
+                if backoff > 4:
+                    raise
+                wait = min(5 * 2 ** (backoff - 1), 60)
+                print(f"      '{chain[idx]}' busy — waiting {wait}s (retry {backoff}/4)")
+                await asyncio.sleep(wait)
 
 
 async def dump_graph(graphiti: Graphiti) -> None:
@@ -210,27 +230,16 @@ async def main() -> None:
           f"{entries[0][0].date()} → {entries[-1][0].date()} (oldest first).\n")
 
     chain = model_chain()
-    last_err: Exception | None = None
-    for i, llm_model in enumerate(chain):
-        graphiti = build_graphiti(llm_model)
-        try:
-            await graphiti.build_indices_and_constraints()
-            await clear_graph(graphiti)          # fresh start for this model attempt
-            await ingest(graphiti, entries)
-            await dump_graph(graphiti)
-            return                               # success — stop trying models
-        except Exception as e:  # noqa: BLE001
-            last_err = e
-            if _is_transient(e) and i < len(chain) - 1:
-                print(f"\n  '{llm_model}' is overloaded (503). Falling back to "
-                      f"'{chain[i + 1]}'...\n")
-                continue
-            raise
-        finally:
-            await graphiti.close()
-
-    raise SystemExit(f"\n  Every model in the chain is unavailable right now: {chain}\n"
-                     f"  Last error: {last_err}\n  Try again in a few minutes.\n")
+    api_key = os.environ["GEMINI_API_KEY"]
+    graphiti = build_graphiti(chain[0])          # built once; model swaps happen in-place
+    try:
+        await graphiti.build_indices_and_constraints()
+        print("  wiping graph for a fresh run (so re-runs don't stack duplicate entries)\n")
+        await clear_graph(graphiti)
+        await ingest(graphiti, entries, chain, api_key)
+        await dump_graph(graphiti)
+    finally:
+        await graphiti.close()
 
 
 if __name__ == "__main__":
