@@ -24,7 +24,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-DEFAULT_VISION_MODEL = "gemini-3.5-flash"  # multimodal — reads handwriting; override in .env
+DEFAULT_VISION_MODEL = "gemini-3-flash-preview"  # multimodal — reads handwriting; override in .env
 ENTRIES_DIR = Path("data/entries")
 TRANSCRIPTS_DIR = Path("data/transcripts")
 

@@ -79,14 +79,21 @@ def load_entries() -> list[tuple[datetime, str, str]]:
     return sorted(entries, key=lambda e: e[0])
 
 
-def build_graphiti() -> Graphiti:
+def model_chain() -> list[str]:
+    """Extraction models to try in order — falls through when one is overloaded (503).
+    Default puts the standard Gemini 3 Flash first, then the high-throughput Lite (which
+    has the most free-tier headroom) as a guaranteed-available backstop."""
+    raw = os.getenv("MIRROR_LLM_MODEL", "gemini-3-flash-preview,gemini-3.1-flash-lite")
+    return [m.strip() for m in raw.split(",") if m.strip()]
+
+
+def build_graphiti(llm_model: str) -> Graphiti:
     api_key = os.environ["GEMINI_API_KEY"]
     driver = FalkorDriver(
         host=os.getenv("FALKORDB_HOST", "localhost"),
         port=int(os.getenv("FALKORDB_PORT", "6379")),
         database=os.getenv("FALKORDB_DATABASE", "mirror"),
     )
-    llm_model = os.getenv("MIRROR_LLM_MODEL", DEFAULT_LLM_MODEL)
     embed_model = os.getenv("MIRROR_EMBED_MODEL", DEFAULT_EMBED_MODEL)
     rerank_model = os.getenv("MIRROR_RERANK_MODEL", DEFAULT_RERANK_MODEL)
     print(f"  models  llm={llm_model}  embed={embed_model}  rerank={rerank_model}")
@@ -96,6 +103,11 @@ def build_graphiti() -> Graphiti:
         embedder=GeminiEmbedder(config=GeminiEmbedderConfig(api_key=api_key, embedding_model=embed_model)),
         cross_encoder=GeminiRerankerClient(config=LLMConfig(api_key=api_key, model=rerank_model)),
     )
+
+
+async def clear_graph(graphiti: Graphiti) -> None:
+    """Wipe the graph so a mid-run model switch doesn't leave half-ingested duplicates."""
+    await graphiti.driver.execute_query("MATCH (n) DETACH DELETE n")
 
 
 TRANSIENT = ("503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "500", "INTERNAL", "overloaded")
@@ -115,7 +127,7 @@ def _is_transient(err: BaseException) -> bool:
 async def ingest(graphiti: Graphiti, entries) -> None:
     for date, filename, text in entries:
         print(f"  → ingesting {filename}  ({date.date()})  [{len(text)} chars]")
-        delay, attempts = 5, 6
+        delay, attempts = 4, 3   # give up on this model quickly so the fallback chain kicks in
         for attempt in range(1, attempts + 1):
             try:
                 await graphiti.add_episode(
@@ -188,13 +200,28 @@ async def main() -> None:
     print(f"\n  Loaded {len(entries)} entries, "
           f"{entries[0][0].date()} → {entries[-1][0].date()} (oldest first).\n")
 
-    graphiti = build_graphiti()
-    try:
-        await graphiti.build_indices_and_constraints()
-        await ingest(graphiti, entries)
-        await dump_graph(graphiti)
-    finally:
-        await graphiti.close()
+    chain = model_chain()
+    last_err: Exception | None = None
+    for i, llm_model in enumerate(chain):
+        graphiti = build_graphiti(llm_model)
+        try:
+            await graphiti.build_indices_and_constraints()
+            await clear_graph(graphiti)          # fresh start for this model attempt
+            await ingest(graphiti, entries)
+            await dump_graph(graphiti)
+            return                               # success — stop trying models
+        except Exception as e:  # noqa: BLE001
+            last_err = e
+            if _is_transient(e) and i < len(chain) - 1:
+                print(f"\n  '{llm_model}' is overloaded (503). Falling back to "
+                      f"'{chain[i + 1]}'...\n")
+                continue
+            raise
+        finally:
+            await graphiti.close()
+
+    raise SystemExit(f"\n  Every model in the chain is unavailable right now: {chain}\n"
+                     f"  Last error: {last_err}\n  Try again in a few minutes.\n")
 
 
 if __name__ == "__main__":
