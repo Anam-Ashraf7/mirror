@@ -24,7 +24,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-DEFAULT_VISION_MODEL = "gemini-3-flash"  # multimodal — reads handwriting; override in .env
+DEFAULT_VISION_MODEL = "gemini-3.5-flash"  # multimodal — reads handwriting; override in .env
 ENTRIES_DIR = Path("data/entries")
 TRANSCRIPTS_DIR = Path("data/transcripts")
 
@@ -72,6 +72,7 @@ def main() -> None:
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise SystemExit("  Set GEMINI_API_KEY in .env (see .env.example).")
+    os.environ.pop("GOOGLE_API_KEY", None)   # use our .env key unambiguously
 
     entries = group_entries()
     if not entries:

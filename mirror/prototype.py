@@ -39,9 +39,9 @@ from mirror.ontology import ENTITY_TYPES, EDGE_TYPES, EDGE_TYPE_MAP
 # --- provider config: models are set in .env so switching is config, not a code edit ---
 # Defaults target the latest Flash (better free-tier limits than Pro, and 3.x Flash now
 # rivals Pro on quality). Confirm the exact ids in Google AI Studio and override in .env.
-DEFAULT_LLM_MODEL = "gemini-3-flash"          # extraction brain
-DEFAULT_EMBED_MODEL = "gemini-embedding-001"  # embeddings
-DEFAULT_RERANK_MODEL = "gemini-3-flash-lite"  # cheap reranker, keeps us single-vendor
+DEFAULT_LLM_MODEL = "gemini-3.5-flash"          # extraction brain (pinned, not -latest, for cross-year consistency)
+DEFAULT_EMBED_MODEL = "gemini-embedding-001"    # embeddings
+DEFAULT_RERANK_MODEL = "gemini-3.1-flash-lite"  # cheap reranker, keeps us single-vendor
 
 TRANSCRIPTS_DIR = Path("data/transcripts")
 DATE_RE = re.compile(r"(\d{4})-(\d{2})-(\d{2})")
@@ -149,7 +149,11 @@ async def dump_graph(graphiti: Graphiti) -> None:
 
 async def main() -> None:
     load_dotenv()
-    if not os.getenv("GEMINI_API_KEY"):
+    # Use OUR key unambiguously: if the .env key is set, drop any ambient GOOGLE_API_KEY so
+    # the SDK can't silently pick a different account/quota.
+    if os.getenv("GEMINI_API_KEY"):
+        os.environ.pop("GOOGLE_API_KEY", None)
+    else:
         raise SystemExit("  Set GEMINI_API_KEY in .env (see .env.example).")
 
     entries = load_entries()
