@@ -145,15 +145,20 @@ async def ingest(graphiti: Graphiti, entries, chain: list[str], api_key: str) ->
     model to the next in the chain (instantly, no wipe) and retry the same entry; only on
     the last model do we wait-and-retry. The model index persists across entries, so once
     we land on a model with headroom, the rest of the run stays on it."""
+    subject = os.getenv("MIRROR_SUBJECT_NAME", "Anam")
     idx = 0
     for date, filename, text in entries:
         print(f"  → ingesting {filename}  ({date.date()})  [{len(text)} chars]  via {chain[idx]}")
+        # Anchor the first-person author so edges attach to a real "self" node, not to
+        # random concepts. Without this, "I practice meditation" has nothing to hang off.
+        framed = (f"[Journal entry written by {subject}. Throughout, 'I', 'me', and 'my' "
+                  f"refer to {subject}.]\n\n{text}")
         backoff = 0
         while True:
             try:
                 await graphiti.add_episode(
                     name=f"journal-{date.date()}",
-                    episode_body=text,
+                    episode_body=framed,
                     source=EpisodeType.text,
                     source_description="handwritten journal entry (proofread)",
                     reference_time=date,   # <-- the authored date, NOT today. Critical.
