@@ -34,15 +34,20 @@ docker compose up -d              # start FalkorDB (graph UI at http://localhost
 cp .env.example .env              # then put your GEMINI_API_KEY in .env
 pip install -r requirements.txt
 
-# drop a few real entries in data/entries/, one file each, named by date:
-#   data/entries/2023-03-12.md
-#   data/entries/2024-11-03.md
-#   data/entries/2026-04-21.md
+# put page images in data/entries/, named by date (with -N for multi-page entries):
+#   data/entries/2024-01-06-1.jpeg   ┐
+#   data/entries/2024-01-06-2.jpeg   ├─ one 4-page entry, dated 2024-01-06
+#   data/entries/2024-01-06-3.jpeg   │
+#   data/entries/2024-01-06-4.jpeg   ┘
+#   data/entries/2025-01-03.jpeg      ── one single-page entry
 
-python -m mirror.prototype        # ingest oldest-first, then print the graph
+python -m mirror.transcribe       # 1. images -> data/transcripts/*.md  (Gemini vision)
+                                  #    ...then PROOFREAD the transcripts (the trust gate)
+python -m mirror.prototype        # 2. ingest oldest-first, then print the graph
 ```
 
-`data/` is git-ignored — your journal entries stay local.
+Pages of one entry (same date) are merged into a **single** episode, stamped with that
+date. `data/` is git-ignored — your journals and transcripts stay local.
 
 ## Status
 

@@ -8,8 +8,10 @@ Run:
     1. docker compose up -d                 # start FalkorDB
     2. cp .env.example .env  &&  edit .env   # add GEMINI_API_KEY
     3. pip install -r requirements.txt
-    4. put entries in data/entries/ named YYYY-MM-DD.md   (one entry per file)
-    5. python -m mirror.prototype
+    4. put page images in data/entries/ (YYYY-MM-DD[-N].jpeg), then:
+       python -m mirror.transcribe        # images -> data/transcripts/*.md
+       (proofread the transcripts against your notebook)
+    5. python -m mirror.prototype         # ingest the proofread transcripts
 
 Nothing here is production code — it's a throwaway harness to answer one question:
 does the graph faithfully represent what the entries actually say?
@@ -39,23 +41,25 @@ LLM_MODEL = "gemini-2.5-pro"            # extraction brain (locked decision)
 EMBED_MODEL = "embedding-001"           # Gemini embeddings (update if your key prefers another)
 RERANK_MODEL = "gemini-2.5-flash-lite"  # cheap reranker, keeps us single-vendor
 
-ENTRIES_DIR = Path("data/entries")
+TRANSCRIPTS_DIR = Path("data/transcripts")
 DATE_RE = re.compile(r"(\d{4})-(\d{2})-(\d{2})")
 
 
 def load_entries() -> list[tuple[datetime, str, str]]:
-    """Return (date, filename, text) for each entry, sorted OLDEST FIRST.
+    """Return (date, filename, text) for each proofread transcript, sorted OLDEST FIRST.
 
-    Date is parsed from the filename (YYYY-MM-DD...). Oldest-first ordering is what
-    lets Graphiti build `ShiftedTo` transitions in the right temporal direction.
+    One transcript file = one entry (multi-page images were already merged by
+    `mirror.transcribe`). Date is parsed from the filename (YYYY-MM-DD.md). Oldest-first
+    ordering is what lets Graphiti build `ShiftedTo` transitions in the right direction.
     """
-    if not ENTRIES_DIR.exists():
+    if not TRANSCRIPTS_DIR.exists():
         raise SystemExit(
-            f"\n  No entries found. Create {ENTRIES_DIR}/ and drop in files named\n"
-            f"  YYYY-MM-DD.md (one journal entry each), then re-run.\n"
+            f"\n  No transcripts found. Run `python -m mirror.transcribe` first to turn\n"
+            f"  your page images in data/entries/ into proofread-ready {TRANSCRIPTS_DIR}/*.md,\n"
+            f"  proofread them, then re-run this.\n"
         )
     entries = []
-    for path in ENTRIES_DIR.glob("*.md"):
+    for path in TRANSCRIPTS_DIR.glob("*.md"):
         m = DATE_RE.search(path.name)
         if not m:
             print(f"  ! skipping {path.name} — no YYYY-MM-DD date in filename")
@@ -65,7 +69,7 @@ def load_entries() -> list[tuple[datetime, str, str]]:
         if text:
             entries.append((date, path.name, text))
     if not entries:
-        raise SystemExit(f"\n  {ENTRIES_DIR}/ has no dated *.md entries yet.\n")
+        raise SystemExit(f"\n  {TRANSCRIPTS_DIR}/ has no dated *.md transcripts yet.\n")
     return sorted(entries, key=lambda e: e[0])
 
 
