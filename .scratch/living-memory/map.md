@@ -33,8 +33,9 @@ effort* once this spec is locked. No production build during this map.
 - **Graph backend:** **FalkorDB** — one backend from laptop to prod (single Docker container),
   no swap needed. (Kuzu is deprecated in Graphiti; Neo4j rejected as heavier.)
 - **Runtime:** Python (Graphiti is a Python library).
-- **Extraction LLM:** **Gemini 2.5 Pro** — also multimodal, so it doubles as the handwriting
-  OCR + date reader for notebook photos.
+- **Extraction LLM:** **Gemini — latest Flash (3.x)**, set via `.env` (was 2.5 Pro; switched
+  because Pro is throttled off the free tier (~50 req/day) while 3.x Flash gives ~1500/day and
+  now rivals Pro on quality). Also multimodal, so it doubles as the handwriting OCR for photos.
 - **Representation:** hybrid — a curated **typed person-ontology** + Graphiti's **open-ended**
   extraction running alongside + raw entries embedded for RAG fallback.
 - **Person ontology (approved):** anchored on a single **Subject** node.

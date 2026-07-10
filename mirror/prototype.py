@@ -36,10 +36,12 @@ from graphiti_core.cross_encoder.gemini_reranker_client import GeminiRerankerCli
 
 from mirror.ontology import ENTITY_TYPES, EDGE_TYPES, EDGE_TYPE_MAP
 
-# --- provider config (behind these constants is the whole "swap later" story) ---
-LLM_MODEL = "gemini-2.5-pro"            # extraction brain (locked decision)
-EMBED_MODEL = "embedding-001"           # Gemini embeddings (update if your key prefers another)
-RERANK_MODEL = "gemini-2.5-flash-lite"  # cheap reranker, keeps us single-vendor
+# --- provider config: models are set in .env so switching is config, not a code edit ---
+# Defaults target the latest Flash (better free-tier limits than Pro, and 3.x Flash now
+# rivals Pro on quality). Confirm the exact ids in Google AI Studio and override in .env.
+DEFAULT_LLM_MODEL = "gemini-3-flash"          # extraction brain
+DEFAULT_EMBED_MODEL = "gemini-embedding-001"  # embeddings
+DEFAULT_RERANK_MODEL = "gemini-3-flash-lite"  # cheap reranker, keeps us single-vendor
 
 TRANSCRIPTS_DIR = Path("data/transcripts")
 DATE_RE = re.compile(r"(\d{4})-(\d{2})-(\d{2})")
@@ -80,11 +82,15 @@ def build_graphiti() -> Graphiti:
         port=int(os.getenv("FALKORDB_PORT", "6379")),
         database=os.getenv("FALKORDB_DATABASE", "mirror"),
     )
+    llm_model = os.getenv("MIRROR_LLM_MODEL", DEFAULT_LLM_MODEL)
+    embed_model = os.getenv("MIRROR_EMBED_MODEL", DEFAULT_EMBED_MODEL)
+    rerank_model = os.getenv("MIRROR_RERANK_MODEL", DEFAULT_RERANK_MODEL)
+    print(f"  models  llm={llm_model}  embed={embed_model}  rerank={rerank_model}")
     return Graphiti(
         graph_driver=driver,
-        llm_client=GeminiClient(config=LLMConfig(api_key=api_key, model=LLM_MODEL)),
-        embedder=GeminiEmbedder(config=GeminiEmbedderConfig(api_key=api_key, embedding_model=EMBED_MODEL)),
-        cross_encoder=GeminiRerankerClient(config=LLMConfig(api_key=api_key, model=RERANK_MODEL)),
+        llm_client=GeminiClient(config=LLMConfig(api_key=api_key, model=llm_model)),
+        embedder=GeminiEmbedder(config=GeminiEmbedderConfig(api_key=api_key, embedding_model=embed_model)),
+        cross_encoder=GeminiRerankerClient(config=LLMConfig(api_key=api_key, model=rerank_model)),
     )
 
 

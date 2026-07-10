@@ -16,7 +16,7 @@ The full design lives as a **wayfinder map** in [`.scratch/living-memory/`](.scr
 |---|---|
 | Memory substrate | **Graphiti** — temporal knowledge graph (bi-temporal facts power "then vs now") |
 | Graph backend | **FalkorDB** — one container, laptop → prod, no swap |
-| Extraction | **Gemini 2.5 Pro** (also reads handwriting from page photos) |
+| Extraction & vision | **Gemini (latest Flash, 3.x)** — reads handwriting *and* extracts the graph; far higher free-tier limits than Pro. Set via `.env`. |
 | Embeddings | **Gemini** (single vendor) |
 | Representation | typed **person-ontology** + Graphiti's open-ended extraction, side by side |
 | Audio (going-forward) | **local faster-whisper** — raw voice never leaves the machine |

@@ -24,7 +24,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-VISION_MODEL = "gemini-2.5-pro"          # multimodal — reads handwriting (locked decision)
+DEFAULT_VISION_MODEL = "gemini-3-flash"  # multimodal — reads handwriting; override in .env
 ENTRIES_DIR = Path("data/entries")
 TRANSCRIPTS_DIR = Path("data/transcripts")
 
@@ -59,11 +59,11 @@ def group_entries() -> dict[str, list[Path]]:
     return {d: [p for _, p in sorted(pages)] for d, pages in sorted(groups.items())}
 
 
-def transcribe_entry(client: genai.Client, pages: list[Path]) -> str:
+def transcribe_entry(client: genai.Client, pages: list[Path], model: str) -> str:
     parts = [types.Part.from_text(text=PROMPT)]
     for p in pages:
         parts.append(types.Part.from_bytes(data=p.read_bytes(), mime_type=MIME[p.suffix.lower()]))
-    resp = client.models.generate_content(model=VISION_MODEL, contents=parts)
+    resp = client.models.generate_content(model=model, contents=parts)
     return (resp.text or "").strip()
 
 
@@ -78,12 +78,13 @@ def main() -> None:
         raise SystemExit(f"  No dated page images found in {ENTRIES_DIR}/.")
     TRANSCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
 
+    model = os.getenv("MIRROR_VISION_MODEL", DEFAULT_VISION_MODEL)
     client = genai.Client(api_key=api_key)
-    print(f"\n  Transcribing {len(entries)} entries with {VISION_MODEL}...\n")
+    print(f"\n  Transcribing {len(entries)} entries with {model}...\n")
     for date, pages in entries.items():
         pagelabel = f"{len(pages)} page{'s' if len(pages) > 1 else ''}"
         print(f"  → {date}  ({pagelabel}: {', '.join(p.name for p in pages)})")
-        text = transcribe_entry(client, pages)
+        text = transcribe_entry(client, pages, model)
         out = TRANSCRIPTS_DIR / f"{date}.md"
         out.write_text(text + "\n", encoding="utf-8")
         print(f"      wrote {out}  [{len(text)} chars]")
