@@ -102,10 +102,13 @@ def build_graphiti(llm_model: str) -> Graphiti:
     )
     embed_model = os.getenv("MIRROR_EMBED_MODEL", DEFAULT_EMBED_MODEL)
     rerank_model = os.getenv("MIRROR_RERANK_MODEL", DEFAULT_RERANK_MODEL)
-    print(f"  models  llm={llm_model}  embed={embed_model}  rerank={rerank_model}")
+    # Graphiti uses a cheaper "small_model" for attribute extraction / dedup. Its built-in
+    # Gemini default is gemini-2.5-flash-lite, which the API now 404s — so set it explicitly.
+    small_model = os.getenv("MIRROR_SMALL_MODEL", "gemini-3.1-flash-lite")
+    print(f"  models  llm={llm_model}  small={small_model}  embed={embed_model}  rerank={rerank_model}")
     return Graphiti(
         graph_driver=driver,
-        llm_client=GeminiClient(config=LLMConfig(api_key=api_key, model=llm_model)),
+        llm_client=GeminiClient(config=LLMConfig(api_key=api_key, model=llm_model, small_model=small_model)),
         embedder=GeminiEmbedder(config=GeminiEmbedderConfig(api_key=api_key, embedding_model=embed_model)),
         cross_encoder=GeminiRerankerClient(config=LLMConfig(api_key=api_key, model=rerank_model)),
     )
