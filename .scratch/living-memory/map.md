@@ -69,6 +69,19 @@ effort* once this spec is locked. No production build during this map.
 - [Provider adapter boundary](issues/05-provider-adapter-boundary.md) — **lean on Graphiti's provider system; wrap only the gaps**: build `Transcriber` + `Normalizer` + a `MemoryEngine` facade (the app's one entry point); config via `.env` + a providers config. No parallel abstraction over Graphiti.
 - [Longitudinal answer & citation UX](issues/09-longitudinal-answer-ux.md) — **three-layer, narrative-first** (narrative → transition timeline → cited source entries); no claim shown without a citation; graceful refusal + suggested answerable questions. [Mockup published.](https://claude.ai/code/artifact/9f745aa5-4e02-473b-a072-ff8c8e01c3d1)
 
+## Research notes
+
+<!-- standalone findings that inform decisions but aren't tied to one ticket's resolution -->
+
+- [Bi-temporal database landscape](assets/bitemporal-database-landscape.md) — is there a native
+  bi-temporal *graph* DB? Effectively no; **XTDB** is the only native-bitemporal DB (document, not
+  graph). Graphiti adds bitemporality *in software* + does the extraction — **stay on Graphiti**.
+- [LLM provider landscape](assets/05-llm-provider-landscape.md) — free tiers vs pay-as-you-go across
+  all providers (incl. Grok, DeepSeek, GLM, Qwen, Ollama). Free-tier rate limits (not cost) are the
+  dev-loop blocker; go **local Ollama or GLM-free** for iteration, **Gemini/DeepSeek paid** for
+  quality runs. Grok-free + unclear CN endpoints disqualified for diary data. Switching is one
+  `.env` flip behind Graphiti's `OpenAIGenericClient(base_url=…)` seam — no new SDK needed.
+
 ## Not yet specified
 
 <!-- in-scope fog; graduates into tickets as the frontier advances -->

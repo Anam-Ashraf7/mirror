@@ -32,6 +32,9 @@ dump.rdb
 # gstack tooling artifacts
 .gstack/
 
+# Build-in-public drafts — local staging for posts I copy out to share. Stays out of the repo.
+public/
+
 # OS / editor
 .DS_Store
 Thumbs.db

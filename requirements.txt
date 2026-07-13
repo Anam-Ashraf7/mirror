@@ -1,8 +1,8 @@
 # mirror — prototype harness
 # Graphiti with the FalkorDB driver + Google Gemini providers.
-graphiti-core[falkordb]>=0.17
-python-dotenv>=1.0
-google-genai>=1.0          # Gemini vision — handwriting transcription (mirror.transcribe)
+graphiti-core[falkordb]
+python-dotenv
+google-genai         # Gemini vision — handwriting transcription (mirror.transcribe)
 
 # Stage-2 (going-forward audio entries) — uncomment when we wire local transcription:
 # faster-whisper>=1.0
