@@ -57,3 +57,46 @@ network-drop handling, in-place model swap, `MIRROR_MAX_ENTRIES` for cheap valid
 **Next when resumed:** ensure quota (billing or reset) → re-run (optionally `MIRROR_MAX_ENTRIES=1`)
 → confirm the author anchor produces `<subject> —PRACTICES→ Meditation` etc. → then tackle
 finding #2 (get Struggle/EmotionalState nodes) with better ontology descriptions + a stronger model.
+
+## Findings — session 2 (2026-07, provider switch + extraction tuning + model bake-off)
+
+**Crown jewel PROVEN.** Real handwritten entries → a coherent, correctly-typed, **bi-temporal**
+self-graph. A genuine "then→now" fired: `anger —TriggeredBy→ uppa` valid 2024-01-06 → invalidated
+2025-01-03, and `anger —ShiftedTo→ deeper connection`. This is exactly what the whole project is for.
+
+**Provider abstraction shipped** (`mirror/providers.py`): `MIRROR_LLM_PROVIDER=gemini|openai|
+openai_generic` swaps the whole LLM+embedder+reranker trio via `.env`, no code edit — leans on
+Graphiti's own clients (ticket 05 decision), no extra SDK. `openai_generic`+`base_url` reaches
+anyone OpenAI-compatible. Per-run token+cost reporting added.
+
+**The two extraction problems and their fixes (all transfer across models):**
+1. *Type drift → open-vocab edges* (`WANTS_TO_IMPROVE`, `CREATED`). Fixed by (a) sharpened
+   entity/edge docstrings — Graphiti feeds them to the prompt — and (b) `custom_extraction_
+   instructions` ("use ONLY these 8 relations; never invent names") + a complete `EDGE_TYPE_MAP`
+   (added the `Intends` edge for orphaned Intention edges). Result: **100% typed, zero drift.**
+2. *Missing nodes + wrong subject/direction.* Sharpened descriptions restored recall (emotions,
+   struggles, insights, intentions). A subject/direction instruction ("the experiencer is always
+   Anam; 'Dear Master' is the addressee, not the subject; a feeling is `TriggeredBy` a person, not
+   the reverse") fixed a mis-attribution where the addressee "Master" was cast as the experiencer.
+
+**Model bake-off (same improved pipeline, primary-sourced prices):**
+- **gpt-5.4-nano** ($0.20/$1.25; ~$0.01/entry): best emotions + `ShiftedTo` transitions; **drops
+  Insights stochastically** (v2 caught 4, v3 caught 0 — same config → it's VARIANCE, not tier).
+- **gpt-5.4-mini** ($0.75/$4.50; ~$0.04/entry): reliable Insights but **muddles emotions**
+  ("felt peace"→anger node) and fired **no** transitions. Not worth 4× — differently-flawed.
+- **Gemini 3 Flash**: **untestable** — free-tier 503 is server capacity, a *fresh free key does
+  not help*; needs the $10 prepay. (OpenAI is also prepaid, $5 min; both non-refundable, 1yr.)
+- Reasoning knob: for this structured task **`low` beats `medium`/`none`** — more reasoning made
+  nano freelance open-vocab edges; `none` failed to attach edges.
+
+**Decision — extraction config (option #1):** the residual gap is *variance*, not model tier, so
+we don't pay up. **nano + ENSEMBLE (ingest each entry N× ) + post-dedup.** The union recovers full
+recall (all layers together); a Cypher cleanup collapses the duplicate edges the union leaves
+(`MIRROR_ENSEMBLE_PASSES`, `dedupe_graph()`). Validated on entry 1 ×2: full recall, 0 duplicate
+edges, ~$0.03/entry. Residual (left for the build): near-duplicate *nodes* ("listen to my heart" vs
+"I need to listen to my heart") need semantic entity-resolution tuning, not a string merge.
+
+**Env realities:** new OpenAI accounts are **Tier-1** (low RPM/TPM — high `SEMAPHORE_LIMIT` triggers
+429 backoff; keep it ~2); long runs get killed in this environment, so the full-3-entry ensemble
+needs gentle concurrency + chunking. Costs measured, not guessed: early/near-empty graph ≈
+$0.005/entry, rises with graph size; whole 3-yr corpus is single-digit dollars even with iteration.
