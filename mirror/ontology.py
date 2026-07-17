@@ -121,7 +121,9 @@ class TriggeredBy(BaseModel):
 
 
 class Addresses(BaseModel):
-    """A Practice is brought to bear on / helps with a Struggle."""
+    """A Practice OR an Intention is brought to bear on / aimed at a Struggle — the practice
+    the author uses, or the aspiration they hold, to help with that specific difficulty
+    (e.g. the intention 'smile more' addresses the struggle 'impatience')."""
 
 
 class Intends(BaseModel):
@@ -170,6 +172,7 @@ For relationships between entities, use ONLY these types, and follow the DIRECTI
 - EmotionalState -> TriggeredBy -> Relationship/person   (a feeling is caused BY a person)
 - Struggle -> TriggeredBy -> Relationship/person         (a struggle is caused BY a person)
 - Practice -> Addresses -> Struggle            (a practice helps WITH a struggle)
+- Intention -> Addresses -> Struggle           (an aspiration is aimed at healing a struggle)
 - EmotionalState -> ShiftedTo -> EmotionalState (an earlier feeling gives way to a later one)
 
 Do NOT reverse these (e.g. never "person -> TriggeredBy -> feeling", never
@@ -215,6 +218,7 @@ EDGE_TYPE_MAP = {
     ("Entity", "Insight"): ["Realized"],
     ("Entity", "Intention"): ["Intends"],
     ("Practice", "Struggle"): ["Addresses"],
+    ("Intention", "Struggle"): ["Addresses"],
     ("EmotionalState", "Relationship"): ["TriggeredBy"],
     ("EmotionalState", "Entity"): ["TriggeredBy"],
     ("Struggle", "Relationship"): ["TriggeredBy"],

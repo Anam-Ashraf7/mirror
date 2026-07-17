@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mirror</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --panel: #ffffff; --ink: #23242a; --muted: #6b6f76;
+    --line: #e6e4de; --accent: #5b6cb3; --accent-soft: #eceef6;
+    --good: #3f7d58; --warn: #9a6a3a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16171b; --panel: #1e2026; --ink: #e9e9ec; --muted: #9aa0a8;
+      --line: #2c2f37; --accent: #97a5e0; --accent-soft: #23283a;
+      --good: #7fc39a; --warn: #d1a56f;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f7f6f3; --panel: #ffffff; --ink: #23242a; --muted: #6b6f76;
+    --line: #e6e4de; --accent: #5b6cb3; --accent-soft: #eceef6; --good: #3f7d58; --warn: #9a6a3a;
+  }
+  :root[data-theme="dark"] {
+    --bg: #16171b; --panel: #1e2026; --ink: #e9e9ec; --muted: #9aa0a8;
+    --line: #2c2f37; --accent: #97a5e0; --accent-soft: #23283a; --good: #7fc39a; --warn: #d1a56f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 48px 20px 96px; }
+  header h1 { font-size: 1.5rem; letter-spacing: -0.02em; margin: 0 0 4px; }
+  header p { color: var(--muted); margin: 0 0 28px; }
+  .ask { display: flex; gap: 8px; }
+  .ask input {
+    flex: 1; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--panel); color: var(--ink); font-size: 1rem;
+  }
+  .ask input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+  button {
+    border: 0; border-radius: 10px; padding: 12px 18px; font-size: 0.95rem; font-weight: 600;
+    background: var(--accent); color: #fff; cursor: pointer;
+  }
+  button.ghost { background: transparent; color: var(--muted); font-weight: 500; padding: 6px 4px; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .toolbar { margin-top: 8px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 20px 22px; margin-top: 20px;
+  }
+  .narrative { font-size: 1.1rem; line-height: 1.55; }
+  .chip {
+    display: inline-block; font-size: 0.8rem; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent);
+  }
+  .chip.good { color: var(--good); } .chip.warn { color: var(--warn); }
+  .label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
+    margin: 22px 0 8px; }
+  .years { list-style: none; padding: 0; margin: 0; }
+  .years li { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+  .years b { font-variant-numeric: tabular-nums; }
+  .theme { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .theme .head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .theme .name { font-weight: 700; }
+  .theme .members { color: var(--muted); font-size: 0.9rem; margin-top: 6px; }
+  .cites { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cites a, .cites span {
+    font-size: 0.85rem; font-variant-numeric: tabular-nums; background: var(--accent-soft);
+    color: var(--accent); padding: 4px 10px; border-radius: 8px; text-decoration: none;
+  }
+  textarea {
+    width: 100%; min-height: 64px; margin-top: 8px; padding: 10px 12px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; resize: vertical;
+  }
+  .muted { color: var(--muted); font-size: 0.9rem; }
+  .note { color: var(--good); font-size: 0.85rem; margin-top: 6px; min-height: 1.1em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>mirror</h1>
+    <p>Ask your journal a question. Every answer points back to what you actually wrote.</p>
+  </header>
+
+  <div class="ask">
+    <input id="q" value="What did I struggle with most, and where is it now?"
+           aria-label="Your question">
+    <button id="askBtn" onclick="ask()">Ask</button>
+  </div>
+  <div class="toolbar">
+    <button class="ghost" onclick="ingest()" id="syncBtn">Sync graph from entries</button>
+    <span class="muted" id="syncMsg"></span>
+  </div>
+
+  <div id="out"></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function ask() {
+  const q = $('q').value.trim();
+  if (!q) return;
+  $('askBtn').disabled = true; $('out').innerHTML = '<p class="muted">Reading your entries…</p>';
+  try {
+    const res = await fetch('/api/ask', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({question: q})
+    });
+    render(await res.json(), q);
+  } catch (e) {
+    $('out').innerHTML = '<div class="card">Could not reach the engine. Is the graph running?</div>';
+  } finally { $('askBtn').disabled = false; }
+}
+
+function render(d, q) {
+  if (!d.found) { $('out').innerHTML = `<div class="card narrative">${esc(d.narrative)}</div>`; return; }
+
+  const status = d.is_active
+    ? '<span class="chip good">still present</span>'
+    : `<span class="chip warn">shifted / eased${d.resolved_at ? ' · ' + esc(d.resolved_at) : ''}</span>`;
+
+  const years = (d.per_year || []).map(w =>
+    `<li><span>${esc(w.year)}</span><b>${esc(w.label)} · ${esc(w.count)}</b></li>`).join('');
+
+  const themes = (d.themes || []).map(t => `
+    <div class="theme">
+      <div class="head"><span class="name">${esc(t.label)}</span>
+        <span class="muted">${esc(t.total_entries)} ${t.total_entries==1?'entry':'entries'} · ${esc(t.types.join(', '))}</span></div>
+      <div class="members">${t.members.map(esc).join(' · ')}</div>
+    </div>`).join('');
+
+  const cites = (d.citations || []).map(c => `<span title="${esc(c.source||'')}">${esc(c.date)}</span>`).join('');
+
+  $('out').innerHTML = `
+    <div class="card">
+      <div class="narrative">${esc(d.narrative)}</div>
+      <div style="margin-top:14px">${status}</div>
+
+      <div class="label">Year by year</div>
+      <ul class="years">${years}</ul>
+
+      <div class="label">What I grouped (correct me if I'm wrong)</div>
+      ${themes}
+
+      <div class="label">Straight from your entries</div>
+      <div class="cites">${cites || '<span class="muted">—</span>'}</div>
+
+      <div class="label">See something off?</div>
+      <textarea id="corr" placeholder="e.g. 'annoyance isn't the same as anger' — I'll remember it."></textarea>
+      <button onclick="correct('${esc(q).replace(/'/g,"\\'")}')">Save correction</button>
+      <div class="note" id="corrNote"></div>
+    </div>`;
+}
+
+async function correct(q) {
+  const note = $('corr').value.trim();
+  if (!note) return;
+  await fetch('/api/correction', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({question: q, note})
+  });
+  $('corrNote').textContent = 'Saved — thank you. This helps mirror get you right.';
+  $('corr').value = '';
+}
+
+async function ingest() {
+  $('syncBtn').disabled = true; $('syncMsg').textContent = ' syncing…';
+  try {
+    const r = await (await fetch('/api/ingest', {method: 'POST'})).json();
+    const n = (r.ingested || []).length;
+    $('syncMsg').textContent = n ? ` added ${n} entr${n==1?'y':'ies'}.` : ' already up to date.';
+  } catch (e) { $('syncMsg').textContent = ' sync failed — is the graph running?'; }
+  finally { $('syncBtn').disabled = false; }
+}
+</script>
+</body>
+</html>

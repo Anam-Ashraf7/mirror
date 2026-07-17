@@ -6,3 +6,11 @@ google-genai         # Gemini vision — handwriting transcription (mirror.trans
 
 # Stage-2 (going-forward audio entries) — uncomment when we wire local transcription:
 # faster-whisper>=1.0
+
+# Web layer — local FastAPI backend + browser UI (the MVP surface).
+fastapi
+uvicorn[standard]
+
+# Dev — behavior-locking tests for the deep-module boundaries (ticket 10).
+pytest
+httpx            # FastAPI TestClient (route tests)
