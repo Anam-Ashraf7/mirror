@@ -1,9 +1,7 @@
 # Extraction-quality prototype on real entries
 
 Type: prototype
-Status: open
-Blocked by: — (awaiting user-provided entries: 3–5 real journal entries with dates,
-typed or photographed, spread across the ~3 years)
+Status: resolved (crown jewel proven; graduated into the MVP build — see [[08-mvp-scope-sequencing]] / PR #12)
 
 ## Question
 

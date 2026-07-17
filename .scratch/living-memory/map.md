@@ -68,6 +68,7 @@ effort* once this spec is locked. No production build during this map.
 - [Entity resolution & consistency](issues/06-entity-resolution-consistency.md) — **handled natively** (auto node-dedup via `SAME_AS` components + bi-temporal contradiction invalidation); Gemini + `json_schema` + atomic attributes as mitigations. Three drift risks handed to the prototype (07).
 - [Provider adapter boundary](issues/05-provider-adapter-boundary.md) — **lean on Graphiti's provider system; wrap only the gaps**: build `Transcriber` + `Normalizer` + a `MemoryEngine` facade (the app's one entry point); config via `.env` + a providers config. No parallel abstraction over Graphiti.
 - [Longitudinal answer & citation UX](issues/09-longitudinal-answer-ux.md) — **three-layer, narrative-first** (narrative → transition timeline → cited source entries); no claim shown without a citation; graceful refusal + suggested answerable questions. [Mockup published.](https://claude.ai/code/artifact/9f745aa5-4e02-473b-a072-ff8c8e01c3d1)
+- [Codebase design for AI agents](issues/10-codebase-design-for-agents.md) — **deep modules, grey-box boundaries**: ~7 sealed modules (MemoryEngine facade, EntryStore, extraction, Transcriber, Normalizer, providers, web), each I own the interface / agents fill the implementation / tests lock behavior. Source of truth (entries) split from derived state (graph). Applied as the MVP is built.
 
 ## Research notes
 
